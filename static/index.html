@@ -1,0 +1,94 @@
+<!doctype html>
+<title>List data</title>
+<script src="mithril.min.js"></script>
+
+<body id="example"></body>
+
+<script>
+/*
+var Observable = function() {
+    var channels = {};
+    return {
+        register: function(subscriptions, controller) {
+            return function self() {
+                var ctrl = new controller;
+                var reload = controller.bind(ctrl);
+                Observable.on(subscriptions, reload);
+                ctrl.onunload = function() {
+                    Observable.off(reload);
+                };
+                return ctrl;
+            }
+        },
+        on: function(subscriptions, callback) {
+            subscriptions.forEach(function(subscription) {
+                if (!channels[subscription])
+                    channels[subscription] = [];
+                channels[subscription].push(callback);
+            })
+        },
+        off: function(callback) {
+            for (var channel in channels) {
+                var index = channels[channel].indexOf(callback);
+                if (index > -1)
+                    channels[channel].splice(index, 1)
+            }
+        },
+        trigger: function(channel, args) {
+            // console.log(channel);
+            channels[channel].map(function(callback) {
+                callback(args);
+            })
+        }
+    }
+}.call();
+*/
+//model
+var Data = {
+    list: function() {
+        console.log('Listing', Data.cache);
+        return m.request({method: "GET", url: "/data/"})
+            .then(Data.last_ts);
+    },
+    last_ts: function(obj) {
+        var newdata = obj.list.filter(function(e) { 
+            return e.ts > Data.last_ts_;
+        });
+        console.debug(newdata);
+        var pop_cnt = newdata.length + Data.cache.length - 10;
+        for(var i = 0; i < pop_cnt; ++i)
+            Data.cache.shift();
+        Data.cache = Data.cache.concat(newdata)
+        Data.last_ts_ = obj.list[obj.list.length -1].ts;
+        return Data.cache.length ? { list: Data.cache } : obj;
+    },
+};
+
+Data.cache = []
+
+var Demo = {
+    controller: function() {
+        var inst = this;
+        this.refresh = function() {
+            inst.data = Data.list();
+        }
+        this.refresh();
+        setInterval(this.refresh, 3000);
+    },
+
+    view: function(ctrl) {
+        console.log('render');
+
+        return m("div", [
+                 ctrl.data().list.map(function(d) {
+                     console.log(d);
+                     return m('li', d.ts);
+                 })
+        ]);
+    }
+};
+
+
+//initialize
+m.mount(document.getElementById("example"), Demo);
+</script>
